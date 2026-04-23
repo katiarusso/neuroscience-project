@@ -1,4 +1,4 @@
-# Project Diary — Tommy
+# Project Diary 
 
 Working on the **MICrONS dataset**: predicting cortical layer identity of V1 excitatory neurons from functional neural activity (calcium imaging / fluorescence time series).
 
