@@ -11,7 +11,8 @@ Working on the **MICrONS dataset**: predicting cortical layer identity of V1 exc
 4. [EDA Observations](#eda-observations)
 5. [Modelling](#modelling)
 6. [Open Questions & Ideas](#open-questions--ideas)
-7. [Log](#log)
+7. [Results Summary](#results-summary)
+8. [Log](#log)
 
 ---
 
@@ -48,7 +49,6 @@ Build a classifier that predicts the **cortical layer** (L2/3, L4, L5, L6) of a 
 
 ### Structural data
 - Matched V1 excitatory neurons are the working set; all other subpopulations discarded.
-- `cc_abs` (Digital Twin model prediction quality): higher → neuron response more reliably captured. Useful as a data-quality filter.
 - `strategy_axon` / `strategy_dendrite` and `status_axon` / `status_dendrite` encode reconstruction and proofreading quality — relevant for weighting or filtering.
 - L2/3 is by far the largest class; L1 has too few samples to model reliably.
 
@@ -83,7 +83,64 @@ Build a classifier that predicts the **cortical layer** (L2/3, L4, L5, L6) of a 
 
 **Metrics reported:** accuracy, balanced accuracy, macro-F1, confusion matrix.
 
-**Result / status:** baseline established. Numbers TBD — fill in after runs.
+**Result / status:** baseline established. Best trial-level accuracy across all naive models: ~30% (close to chance for a 4-class problem). Raw time series carry very little layer-discriminative signal when used without contextual covariates.
+
+---
+
+### Single-channel CNN — `CNN classification2.ipynb`
+
+**Setup:**
+- Input: single neural-response channel (z-scored trace), shape `(1, 300)`.
+- Neuron-level train/test split (no leakage across trials of the same neuron).
+- Models: `ShallowCNN` and `ResidualCNN` (1-D conv nets).
+
+**Result:** best balanced accuracy ~30% — comparable to the naive MLP baseline. Confirms that the neural trace alone, without stimulus or behavioural context, is insufficient for reliable layer classification.
+
+---
+
+### Multi-channel CNN — `CNN multichannel.ipynb` ⭐ Current best
+
+**Setup:**
+- Input: 12-channel time-series tensor `(12, 300)` per sample, one sample per neuron (no trial-leakage).
+- **Channel breakdown:**
+  - Ch 0: z-scored neural response (calcium trace)
+  - Ch 1–7: per-frame stimulus features (mean luminance, pixel contrast, motion energy, gradient energy, edge fraction, centre-surround contrast, normalised contrast)
+  - Ch 8–11: behavioural signals (treadmill velocity, pupil x/y position, pupil size)
+- Architecture: `MultiChannelShallowCNN` — three 1-D conv blocks (64→128→256 filters) + dense head.
+- 4,911 train neurons / 1,637 test neurons; stratified by layer; L1 excluded (too few samples).
+- Class-weighted cross-entropy + cosine LR schedule + early stopping (patience 15).
+
+**Key results (ShallowCNN, trial-level = per-neuron majority vote since one sample/neuron):**
+
+| Metric | Value |
+|---|---|
+| Accuracy | **81.4 %** |
+| Balanced accuracy | **81.8 %** |
+| Macro F1 | **77.1 %** |
+
+Per-class performance:
+
+| Layer | Precision | Recall | F1 |
+|---|---|---|---|
+| L2/3 | 0.89 | 0.80 | 0.84 |
+| L4   | 0.85 | 0.81 | 0.83 |
+| L5   | 0.78 | 0.84 | 0.81 |
+| L6   | 0.48 | 0.82 | 0.60 |
+
+**Why the jump from ~30% → ~81%:** the key insight is that the neural trace alone is nearly uninformative for layer identity — within-layer variability dominates between-layer differences. Adding the 7 stimulus feature channels gives the CNN a frame-by-frame "context" signal, so it can assess how a neuron couples to visual drive rather than judging its raw firing amplitude. The 4 behavioural channels further disambiguate neurons whose response profiles differ mainly due to arousal state (treadmill and pupil modulate V1 gain in a layer-dependent way). The first convolutional layer processes all 12 channels simultaneously, enabling the network to exploit cross-channel correlations (e.g. response locked to motion energy, or pupil dilation correlated with response amplitude) from the very first layer.
+
+**Residual CNN (same 12-channel input):** converged to only 62% accuracy — strong overfitting, likely due to the larger inductive capacity relative to dataset size at this scale.
+
+---
+
+## Results Summary
+
+| Model | Input | Accuracy | Balanced Acc. | Macro F1 |
+|---|---|---|---|---|
+| Logistic Regression / RF / MLP (naive) | Raw z-scored trace | ~30% | ~25–30% | — |
+| ShallowCNN (1-channel) | Neural trace only | ~30% | ~30% | — |
+| ResidualCNN (multi-channel) | 12-ch (neural + stim + beh) | 61.9% | 61.4% | 56.9% |
+| **ShallowCNN (multi-channel)** | **12-ch (neural + stim + beh)** | **81.4%** | **81.8%** | **77.1%** |
 
 ---
 
@@ -106,6 +163,7 @@ Build a classifier that predicts the **cortical layer** (L2/3, L4, L5, L6) of a 
 | Date | Entry |
 |---|---|
 | 2026-04-22 | Diary created. Structural + functional EDA complete. Naive baseline classifier built (MLP + logistic regression + RF on raw z-scored traces). Key finding: raw time series carry very little layer-discriminative signal — within-layer variability dominates. |
+| 2026-04-23 | **Game changer.** Multi-channel CNN (`CNN multichannel.ipynb`) achieves **81.4% accuracy / 81.8% balanced accuracy** — up from ~30% with all previous single-channel models. Input: 12-channel tensor combining neural response, 7 stimulus feature channels, and 4 behavioural channels (treadmill + pupil). Architecture: `MultiChannelShallowCNN` (3 conv blocks). Best class: L2/3 (F1 0.84), worst: L6 (F1 0.60, limited samples). Key lesson: the neural trace alone is nearly uninformative; stimulus context and behavioural covariates provide the discriminative signal. |
 
 ---
 
