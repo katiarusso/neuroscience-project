@@ -1,8 +1,7 @@
 # CLAUDE.md — Istruzioni per Claude Code
 
 ## Scope
-- Lavora SOLO nella cartella /katia/ e nelle sue sottocartelle
-- Non leggere, modificare o toccare file fuori da /katia/
+- Non modificare o toccare file fuori da /katia/, quelli possono essere solo letti
 - Non eseguire git add, git commit, git push, git pull — questi li gestisce l'utente
 
 ## Progetto: MICrONS — Neuron Type Classifier
@@ -16,17 +15,12 @@ Can one see different layers? Is it possible to differentiate different excitato
 in layers 5 and 6?"
 
 ### Approccio pianificato
-- Label target: cell_type (e potenzialmente layer — da verificare se ridondante o informativo)
+- Label target: layer (e potenzialmetne cell_type)
 - Focus iniziale: neuroni in V1 (area più ricca di dati)
-- Estensione possibile: testare su altre aree del cervello
-- Classificatore aggiuntivo: label = area + layer + cell_type combinati
-- VINCOLO CRITICO: usare solo functional data (NO structural/anatomical come posizione)
+- VINCOLO CRITICO: usare solo functional data (NO structural/anatomical)
 
 ### Dati disponibili (via microns-datacleaner)
-- Functional data: time series per neurone (calcium trace + spike trace)
-- Embeddings pre-calcolati: readout_info/foundation_model.pkl su HuggingFace
-  (embedding 1024-dim, ultimo layer modello foundation — suggerito dal prof)
-  → Questo risolve il problema di usare time series come input al classificatore
+- Functional data: time series per neurone (calcium trace + spike trace), time series degli stimuli visivi, behavioural data
 - Paper rilevante: https://www.nature.com/articles/s41586-025-08829-y
 - Dataset HuggingFace: https://huggingface.co/datasets/NeuroBLab/MICrONS/tree/main
 
@@ -36,8 +30,6 @@ microns-datacleaner — documentazione: https://microns-milano-colab.github.io/M
 ## File nel repo
 - `basic_tutorial.ipynb` e `tutorial_microns.ipynb`: notebook dei professori,
   LEGGI per capire il package ma NON modificare né toccare
-- `exploration.ipynb`: notebook principale di lavoro — leggi le celle esistenti
-  prima di aggiungere qualsiasi cosa
 
 ## Notebook — istruzioni
 - Prima di aggiungere celle, leggi TUTTE quelle esistenti per capire dove siamo arrivati
