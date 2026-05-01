@@ -2,6 +2,7 @@
 **/dataset/
 __pycache__/
 *.pyc
+*.pkl
 .ipynb_checkpoints/
 .vscode/
 .env
