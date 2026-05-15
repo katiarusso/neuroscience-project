@@ -1,5 +1,6 @@
 */data/
 **/dataset/
+*notes/
 __pycache__/
 *.pyc
 *.pkl
