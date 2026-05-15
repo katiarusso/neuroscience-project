@@ -7,3 +7,15 @@ __pycache__/
 .ipynb_checkpoints/
 .vscode/
 .env
+
+# LaTeX build artifacts
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+*.out
+*.toc
+
+# macOS
+.DS_Store
